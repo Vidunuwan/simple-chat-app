@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Chat app</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Lato"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    />
+
+    <style>
+      .massage-body {
+        height: 500px;
+        overflow-y: scroll;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div
+        class="d-flex align-items-start flex-column massage-body"
+        id="massage-body"
+        role="alert"
+      >
+        <div class="mt-auto"></div>
+      </div>
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <button
+            type="button"
+            name="send"
+            class="btn btn-outline-secondary"
+            onclick="sendMessage();"
+          >
+            Send
+          </button>
+        </div>
+        <input
+          type="text"
+          class="form-control"
+          name="send-text"
+          id="send-text"
+          aria-label="Text input with segmented dropdown button"
+        />
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase.js"></script>
+    <script>
+      var user = "Umayanga";
+
+      var firebaseConfig = {
+        apiKey: "AIzaSyD6qedPp3aOqEt8aXINxoqmISsnmie5J0A",
+        authDomain: "aahaas-2442e.firebaseapp.com",
+        projectId: "aahaas-2442e",
+        storageBucket: "aahaas-2442e.appspot.com",
+        messagingSenderId: "100414461493",
+        appId: "1:100414461493:web:13ef226693fb276cb7437c",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      var collection = db.collection("chats");
+
+      function sendMessage() {
+        var text = $("#send-text").val();
+
+        if (!text) {
+          return;
+        }
+
+        var data = {
+          message: text,
+          user: user,
+          timestamp: new Date(),
+        };
+        collection
+          .add(data)
+          .then((doc) => {
+            $(".massage-body").append(
+              '<div class="alert alert-primary">' + text + "</div>"
+            );
+            $("#send-text").val("");
+            var massageBody = $("#massage-body");
+            massageBody.scrollTop(massageBody.prop("scrollHeight"));
+          })
+          .catch((error) => {
+            console.error("Error adding new chat document:", error);
+          });
+      }
+
+      collection.onSnapshot(
+        (querySnapshot) => {
+          querySnapshot.docChanges().forEach((change) => {
+            console.log(change.type);
+            if (change.type === "added") {
+              var newChatData = change.doc.data();
+              console.log(newChatData);
+              if (newChatData.user != user) {
+                $(".massage-body").append(
+                  '<div class="alert alert-success ml-auto">' +
+                    newChatData.message +
+                    "</div>"
+                );
+              }
+            }
+          });
+        },
+        (error) => {
+          console.error("Error live update:", error);
+        }
+      );
+
+      collection
+        .orderBy("timestamp", "asc")
+        .get()
+        .then((querySnapshot) => {
+          querySnapshot.forEach((doc) => {
+            var data = doc.data();
+            if (data.user == user) {
+              $(".massage-body").append(
+                '<div class="alert alert-primary">' + data.message + "</div>"
+              );
+            } else {
+              $(".massage-body").append(
+                '<div class="alert alert-success ml-auto">' +
+                  data.message +
+                  "</div>"
+              );
+            }
+          });
+
+          var massageBody = $("#massage-body");
+          massageBody.scrollTop(massageBody.prop("scrollHeight"));
+        })
+        .catch((error) => {
+          console.error("Error getting documents:", error);
+        });
+    </script>
+  </body>
+</html>
